@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://homeowner1-beryl.vercel.app/sitemap.xml

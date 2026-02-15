@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import WarrantyCard from '../components/WarrantyCard';
 import Modal from '../components/Modal';
+import SEO from '../components/SEO';
 
 export default function Warranties() {
   const [warranties, setWarranties] = useState([]);
@@ -62,6 +63,7 @@ export default function Warranties() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
+          <SEO title="Warranty Tracker | HomeGuard Pro" description="Track all your home warranties in one place. Get alerts before they expire." path="/warranties" />
           <h1 className="text-2xl font-bold text-gray-900">Warranty Tracker</h1>
           <p className="text-gray-500">Track all your home warranties in one place</p>
         </div>

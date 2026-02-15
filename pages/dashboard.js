@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import SEO from '../components/SEO';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <SEO title="Dashboard | HomeGuard Pro" description="Your home dashboard — systems, maintenance history, spending, and upcoming tasks all in one place." path="/dashboard" />
       {/* Welcome */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
         <h1 className="text-2xl font-bold">Welcome back{user.name ? `, ${user.name}` : ''}! 👋</h1>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ContractorCard from '../components/ContractorCard';
+import SEO from '../components/SEO';
 
 const mockContractors = [
   { id: '1', name: 'Elite HVAC Solutions', specialty: 'HVAC Installation & Repair', rating: 4.9, reviews: 247, priceRange: '$85-$150/hr', distance: '2.3 mi', description: 'Family-owned HVAC company with 20+ years of experience. Licensed, bonded, and insured. Specializing in energy-efficient installations and emergency repairs. Same-day service available.', services: ['hvac'] },
@@ -40,6 +41,7 @@ export default function Contractors() {
   return (
     <div className="space-y-6">
       <div>
+        <SEO title="Find Contractors | HomeGuard Pro" description="Find vetted, top-rated contractors in your area. Read reviews, compare prices, and request quotes." path="/contractors" />
         <h1 className="text-2xl font-bold text-gray-900">Contractor Finder</h1>
         <p className="text-gray-500">Find top-rated, vetted contractors in your area</p>
       </div>

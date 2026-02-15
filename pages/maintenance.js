@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import MaintenanceItem from '../components/MaintenanceItem';
 import Modal from '../components/Modal';
+import SEO from '../components/SEO';
 
 const systemTypes = ['HVAC', 'Water Heater', 'Roof', 'Plumbing', 'Electrical', 'Appliances'];
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -69,6 +70,7 @@ export default function Maintenance() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
+          <SEO title="Smart Maintenance Scheduler | HomeGuard Pro" description="AI-powered maintenance schedules tailored to your home systems, age, and climate." path="/maintenance" />
           <h1 className="text-2xl font-bold text-gray-900">Maintenance Scheduler</h1>
           <p className="text-gray-500">AI-powered maintenance schedules for your home systems</p>
         </div>

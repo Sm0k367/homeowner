@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import Head from 'next/head';
 import FeatureCard from '../components/FeatureCard';
 import PricingCard from '../components/PricingCard';
+import SEO from '../components/SEO';
 import { useRouter } from 'next/router';
 
 const features = [
@@ -29,6 +31,47 @@ export default function Home() {
 
   return (
     <div>
+      <SEO
+        title="HomeGuard Pro - AI-Powered Home Maintenance | Never Miss a Repair Again"
+        description="AI-powered home maintenance companion. Smart scheduling, emergency guidance, cost optimization — everything you need to protect your biggest investment."
+        path="/"
+      />
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'Organization',
+                  name: 'HomeGuard Pro',
+                  url: 'https://homeowner1-beryl.vercel.app',
+                  logo: 'https://homeowner1-beryl.vercel.app/favicon.svg',
+                  description: 'AI-Powered Home Maintenance Platform',
+                },
+                {
+                  '@type': 'SoftwareApplication',
+                  name: 'HomeGuard Pro',
+                  applicationCategory: 'UtilitiesApplication',
+                  operatingSystem: 'Web',
+                  offers: {
+                    '@type': 'AggregateOffer',
+                    lowPrice: '19.99',
+                    highPrice: '79.99',
+                    priceCurrency: 'USD',
+                  },
+                  aggregateRating: {
+                    '@type': 'AggregateRating',
+                    ratingValue: '4.9',
+                    ratingCount: '10000',
+                  },
+                },
+              ],
+            }),
+          }}
+        />
+      </Head>
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 text-white py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

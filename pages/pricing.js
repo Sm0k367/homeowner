@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PricingCard from '../components/PricingCard';
+import SEO from '../components/SEO';
 import { useRouter } from 'next/router';
 
 const plans = [
@@ -23,6 +24,7 @@ export default function Pricing() {
 
   return (
     <div className="py-12">
+      <SEO title="Pricing Plans | HomeGuard Pro" description="Simple, transparent pricing. Protect your home for less than a cup of coffee a day. All plans include a 14-day free trial." path="/pricing" />
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">

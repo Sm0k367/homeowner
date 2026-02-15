@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import CostEstimate from '../components/CostEstimate';
+import SEO from '../components/SEO';
 
 const commonTasks = ['HVAC Repair', 'HVAC Replacement', 'Roof Repair', 'Plumbing Repair', 'Electrical Work', 'Painting', 'Water Heater'];
 const categories = ['Maintenance', 'Repair', 'Improvement', 'Emergency', 'Other'];
@@ -63,6 +64,7 @@ export default function Costs() {
   return (
     <div className="space-y-6">
       <div>
+        <SEO title="Cost Optimizer | HomeGuard Pro" description="Compare DIY vs professional costs, get money-saving tips, and track your home maintenance budget." path="/costs" />
         <h1 className="text-2xl font-bold text-gray-900">Cost Optimizer</h1>
         <p className="text-gray-500">Compare costs, get savings tips, and track your home maintenance budget</p>
       </div>

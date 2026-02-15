@@ -1,0 +1,16 @@
+{
+  "name": "HomeGuard Pro",
+  "short_name": "HomeGuard",
+  "description": "AI-Powered Home Maintenance - Never Miss a Repair Again",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2563EB",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

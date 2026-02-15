@@ -1,8 +1,10 @@
 import EmergencyChat from '../components/EmergencyChat';
+import SEO from '../components/SEO';
 
 export default function Emergency() {
   return (
     <div className="space-y-6">
+      <SEO title="Emergency Home Guide | HomeGuard Pro" description="Instant step-by-step guidance for any home emergency. Know exactly what to do when disaster strikes." path="/emergency" />
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Emergency Guide</h1>
         <p className="text-gray-500">Get instant step-by-step guidance for any home emergency</p>
