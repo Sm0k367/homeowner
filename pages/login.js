@@ -1,29 +1,26 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Login() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const users = JSON.parse(localStorage.getItem('hg_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user && email && password) {
-      // For demo, allow any login
-      localStorage.setItem('hg_user', JSON.stringify({ email }));
+    setLoading(true);
+    const { user, error: err } = await signIn(email, password);
+    setLoading(false);
+    if (err) {
+      setError(err.message);
+    } else if (user) {
       router.push('/dashboard');
-      return;
-    }
-    if (user) {
-      localStorage.setItem('hg_user', JSON.stringify({ email: user.email }));
-      router.push('/dashboard');
-    } else {
-      setError('Please enter your email and password.');
     }
   };
 
@@ -49,7 +46,9 @@ export default function Login() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="input-field" placeholder="••••••••" required />
             </div>
-            <button type="submit" className="btn-primary w-full">Sign In</button>
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-4">
             Don't have an account? <Link href="/signup" className="text-blue-600 font-semibold hover:underline">Sign up free</Link>

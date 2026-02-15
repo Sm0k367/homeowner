@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import MaintenanceItem from '../components/MaintenanceItem';
 import Modal from '../components/Modal';
 import SEO from '../components/SEO';
+import { useAuth } from '../lib/AuthContext';
+import { getMaintenance, saveMaintenance, updateMaintenanceTask } from '../lib/database';
 
 const systemTypes = ['HVAC', 'Water Heater', 'Roof', 'Plumbing', 'Electrical', 'Appliances'];
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function Maintenance() {
+  const { user, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ type: 'HVAC', age: '', location: '' });
@@ -16,14 +19,16 @@ export default function Maintenance() {
   const [view, setView] = useState('list');
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    const saved = localStorage.getItem('hg_maintenance');
-    if (saved) setTasks(JSON.parse(saved));
-  }, []);
+  const userId = user?.id || user?.email;
 
-  const save = (updated) => {
+  useEffect(() => {
+    if (!user) return;
+    getMaintenance(userId).then(setTasks);
+  }, [user]);
+
+  const save = async (updated) => {
     setTasks(updated);
-    localStorage.setItem('hg_maintenance', JSON.stringify(updated));
+    await saveMaintenance(userId, updated);
   };
 
   const addSystem = async () => {
@@ -35,7 +40,7 @@ export default function Maintenance() {
         body: JSON.stringify({ itemType: form.type, age: form.age, location: form.location }),
       });
       const data = await res.json();
-      save([...tasks, ...data.tasks]);
+      await save([...tasks, ...data.tasks]);
       setTips(data.tips || []);
       setAgeNote(data.ageNote || '');
       setShowModal(false);
@@ -46,17 +51,21 @@ export default function Maintenance() {
     setLoading(false);
   };
 
-  const toggleComplete = (id) => {
-    save(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const toggleComplete = async (id) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+      setTasks(updated);
+      await updateMaintenanceTask(userId, id, { completed: !task.completed });
+    }
   };
 
-  const deleteTask = (id) => {
-    save(tasks.filter(t => t.id !== id));
+  const deleteTask = async (id) => {
+    await save(tasks.filter(t => t.id !== id));
   };
 
   const filtered = filter === 'all' ? tasks : filter === 'pending' ? tasks.filter(t => !t.completed) : tasks.filter(t => t.completed);
 
-  // Calendar data
   const calendarTasks = tasks.filter(t => !t.completed);
   const tasksByMonth = {};
   calendarTasks.forEach(t => {
@@ -65,6 +74,8 @@ export default function Maintenance() {
     if (!tasksByMonth[key]) tasksByMonth[key] = [];
     tasksByMonth[key].push(t);
   });
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="space-y-6">
@@ -87,7 +98,6 @@ export default function Maintenance() {
         </div>
       )}
 
-      {/* View Toggle & Filter */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div className="flex gap-2">
           <button onClick={() => setView('list')} className={`px-4 py-2 rounded-lg text-sm font-medium ${view === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>📋 List</button>

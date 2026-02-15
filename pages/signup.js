@@ -1,25 +1,29 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Signup() {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
 
-    const users = JSON.parse(localStorage.getItem('hg_users') || '[]');
-    if (users.find(u => u.email === form.email)) { setError('An account with this email already exists.'); return; }
-
-    users.push({ name: form.name, email: form.email, password: form.password });
-    localStorage.setItem('hg_users', JSON.stringify(users));
-    localStorage.setItem('hg_user', JSON.stringify({ email: form.email, name: form.name }));
-    router.push('/dashboard');
+    setLoading(true);
+    const { user, error: err } = await signUp(form.email, form.password, form.name);
+    setLoading(false);
+    if (err) {
+      setError(err.message);
+    } else if (user) {
+      router.push('/dashboard');
+    }
   };
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
@@ -54,7 +58,9 @@ export default function Signup() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
               <input type="password" value={form.confirm} onChange={set('confirm')} className="input-field" placeholder="••••••••" required />
             </div>
-            <button type="submit" className="btn-cta w-full">Create Account →</button>
+            <button type="submit" disabled={loading} className="btn-cta w-full">
+              {loading ? 'Creating account...' : 'Create Account →'}
+            </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-4">
             Already have an account? <Link href="/login" className="text-blue-600 font-semibold hover:underline">Sign in</Link>

@@ -1,30 +1,38 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import SEO from '../components/SEO';
+import { useAuth } from '../lib/AuthContext';
+import { getHomeProfile, saveHomeProfile, getMaintenance, getWarranties, getExpenses } from '../lib/database';
 
 export default function Dashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState({ address: '', sqft: '', yearBuilt: '', systems: [] });
   const [editing, setEditing] = useState(false);
+  const [maintenanceTasks, setMaintenanceTasks] = useState([]);
+  const [warranties, setWarranties] = useState([]);
+  const [expenses, setExpenses] = useState([]);
 
   useEffect(() => {
-    const u = localStorage.getItem('hg_user');
-    if (!u) { router.push('/login'); return; }
-    setUser(JSON.parse(u));
-    const p = localStorage.getItem('hg_profile');
-    if (p) setProfile(JSON.parse(p));
-  }, []);
+    if (!user) return;
+    const userId = user.id || user.email;
+    Promise.all([
+      getHomeProfile(userId),
+      getMaintenance(userId),
+      getWarranties(userId),
+      getExpenses(userId),
+    ]).then(([p, m, w, e]) => {
+      setProfile(p);
+      setMaintenanceTasks(m);
+      setWarranties(w);
+      setExpenses(e);
+    });
+  }, [user]);
 
-  const saveProfile = () => {
-    localStorage.setItem('hg_profile', JSON.stringify(profile));
+  const handleSaveProfile = async () => {
+    const userId = user.id || user.email;
+    await saveHomeProfile(userId, profile);
     setEditing(false);
   };
-
-  const maintenanceTasks = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('hg_maintenance') || '[]' : '[]');
-  const warranties = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('hg_warranties') || '[]' : '[]');
-  const expenses = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('hg_expenses') || '[]' : '[]');
 
   const upcomingTasks = maintenanceTasks.filter(t => !t.completed).slice(0, 5);
   const activeWarranties = warranties.filter(w => new Date(w.expiryDate) > new Date());
@@ -37,26 +45,26 @@ export default function Dashboard() {
   const quickActions = [
     { label: 'Add System', icon: '🔧', href: '/maintenance' },
     { label: 'Emergency Help', icon: '🚨', href: '/emergency' },
-    { label: 'Add Warranty', icon: '📋', href: '/warranties' },
+    { label: 'Add Warranty', icon: '🛡', href: '/warranties' },
     { label: 'Find Contractor', icon: '👷', href: '/contractors' },
   ];
 
-  if (!user) return null;
+  if (authLoading || !user) return null;
 
   return (
     <div className="space-y-6">
       <SEO title="Dashboard | HomeGuard Pro" description="Your home dashboard — systems, maintenance history, spending, and upcoming tasks all in one place." path="/dashboard" />
       {/* Welcome */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome back{user.name ? `, ${user.name}` : ''}! 👋</h1>
-        <p className="text-blue-100 mt-1">Here's what's happening with your home.</p>
+        <h1 className="text-2xl font-bold">Welcome back{user.name || user.user_metadata?.name ? `, ${user.name || user.user_metadata?.name}` : ''}! 🏠</h1>
+        <p className="text-blue-100 mt-1">Here&apos;s what&apos;s happening with your home.</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Upcoming Tasks', value: upcomingTasks.length, icon: '🔧', color: 'blue', href: '/maintenance' },
-          { label: 'Active Warranties', value: activeWarranties.length, icon: '📋', color: 'green', href: '/warranties' },
+          { label: 'Active Warranties', value: activeWarranties.length, icon: '🛡', color: 'green', href: '/warranties' },
           { label: 'Expiring Soon', value: expiringWarranties.length, icon: '⚠️', color: 'yellow', href: '/warranties' },
           { label: 'Total Spent', value: `$${totalSpent.toFixed(0)}`, icon: '💰', color: 'purple', href: '/costs' },
         ].map((s, i) => (
@@ -85,8 +93,8 @@ export default function Dashboard() {
         {/* Home Profile */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-900">🏠 Home Profile</h2>
-            <button onClick={() => editing ? saveProfile() : setEditing(true)} className="text-sm text-blue-600 font-semibold hover:underline">
+            <h2 className="text-lg font-bold text-gray-900">🏡 Home Profile</h2>
+            <button onClick={() => editing ? handleSaveProfile() : setEditing(true)} className="text-sm text-blue-600 font-semibold hover:underline">
               {editing ? 'Save' : 'Edit'}
             </button>
           </div>
@@ -121,7 +129,7 @@ export default function Dashboard() {
         {/* Upcoming Tasks */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-900">📅 Upcoming Tasks</h2>
+            <h2 className="text-lg font-bold text-gray-900">📋 Upcoming Tasks</h2>
             <Link href="/maintenance" className="text-sm text-blue-600 font-semibold hover:underline">View All</Link>
           </div>
           {upcomingTasks.length === 0 ? (
@@ -136,7 +144,7 @@ export default function Dashboard() {
                 <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div>
                     <p className="font-medium text-gray-900 text-sm">{t.task}</p>
-                    <p className="text-xs text-gray-500">{t.system} • {t.dueDate}</p>
+                    <p className="text-xs text-gray-500">{t.system} · {t.dueDate}</p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${t.urgency === 'high' ? 'bg-red-100 text-red-700' : t.urgency === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
                     {t.urgency}

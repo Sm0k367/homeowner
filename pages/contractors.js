@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import ContractorCard from '../components/ContractorCard';
 import SEO from '../components/SEO';
+import { useAuth } from '../lib/AuthContext';
+import { getFavoriteContractors, saveFavoriteContractors } from '../lib/database';
 
 const mockContractors = [
   { id: '1', name: 'Elite HVAC Solutions', specialty: 'HVAC Installation & Repair', rating: 4.9, reviews: 247, priceRange: '$85-$150/hr', distance: '2.3 mi', description: 'Family-owned HVAC company with 20+ years of experience. Licensed, bonded, and insured. Specializing in energy-efficient installations and emergency repairs. Same-day service available.', services: ['hvac'] },
@@ -16,19 +18,22 @@ const mockContractors = [
 const serviceTypes = ['All Services', 'HVAC', 'Plumbing', 'Roofing', 'Electrical', 'Painting', 'General'];
 
 export default function Contractors() {
+  const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState('All Services');
   const [zip, setZip] = useState('');
   const [saved, setSaved] = useState([]);
 
-  useEffect(() => {
-    const s = localStorage.getItem('hg_saved_contractors');
-    if (s) setSaved(JSON.parse(s));
-  }, []);
+  const userId = user?.id || user?.email;
 
-  const toggleSave = (id) => {
+  useEffect(() => {
+    if (!user) return;
+    getFavoriteContractors(userId).then(setSaved);
+  }, [user]);
+
+  const toggleSave = async (id) => {
     const updated = saved.includes(id) ? saved.filter(s => s !== id) : [...saved, id];
     setSaved(updated);
-    localStorage.setItem('hg_saved_contractors', JSON.stringify(updated));
+    await saveFavoriteContractors(userId, updated);
   };
 
   const filtered = search === 'All Services'
@@ -38,6 +43,8 @@ export default function Contractors() {
   const [showSaved, setShowSaved] = useState(false);
   const displayed = showSaved ? filtered.filter(c => saved.includes(c.id)) : filtered;
 
+  if (authLoading || !user) return null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -46,7 +53,6 @@ export default function Contractors() {
         <p className="text-gray-500">Find top-rated, vetted contractors in your area</p>
       </div>
 
-      {/* Search */}
       <div className="card">
         <div className="flex flex-col sm:flex-row gap-3">
           <select value={search} onChange={e => setSearch(e.target.value)} className="input-field flex-1">
@@ -57,13 +63,11 @@ export default function Contractors() {
         </div>
       </div>
 
-      {/* Toggle */}
       <div className="flex gap-2">
         <button onClick={() => setShowSaved(false)} className={`px-4 py-2 rounded-lg text-sm font-medium ${!showSaved ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>All Results ({filtered.length})</button>
-        <button onClick={() => setShowSaved(true)} className={`px-4 py-2 rounded-lg text-sm font-medium ${showSaved ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>★ Saved ({saved.length})</button>
+        <button onClick={() => setShowSaved(true)} className={`px-4 py-2 rounded-lg text-sm font-medium ${showSaved ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>❤️ Saved ({saved.length})</button>
       </div>
 
-      {/* Results */}
       <div className="space-y-4">
         {displayed.length === 0 ? (
           <div className="card text-center py-12">

@@ -2,24 +2,29 @@ import { useState, useEffect } from 'react';
 import WarrantyCard from '../components/WarrantyCard';
 import Modal from '../components/Modal';
 import SEO from '../components/SEO';
+import { useAuth } from '../lib/AuthContext';
+import { getWarranties, saveWarranties, deleteWarranty as dbDeleteWarranty } from '../lib/database';
 
 export default function Warranties() {
+  const { user, loading: authLoading } = useAuth();
   const [warranties, setWarranties] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ itemName: '', purchaseDate: '', warrantyYears: '1', provider: '' });
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    const saved = localStorage.getItem('hg_warranties');
-    if (saved) setWarranties(JSON.parse(saved));
-  }, []);
+  const userId = user?.id || user?.email;
 
-  const save = (updated) => {
+  useEffect(() => {
+    if (!user) return;
+    getWarranties(userId).then(setWarranties);
+  }, [user]);
+
+  const save = async (updated) => {
     setWarranties(updated);
-    localStorage.setItem('hg_warranties', JSON.stringify(updated));
+    await saveWarranties(userId, updated);
   };
 
-  const addWarranty = () => {
+  const addWarranty = async () => {
     if (!form.itemName || !form.purchaseDate) return;
     const purchase = new Date(form.purchaseDate);
     const expiry = new Date(purchase);
@@ -33,12 +38,15 @@ export default function Warranties() {
       warrantyYears: form.warrantyYears,
       provider: form.provider,
     };
-    save([...warranties, newWarranty]);
+    await save([...warranties, newWarranty]);
     setShowModal(false);
     setForm({ itemName: '', purchaseDate: '', warrantyYears: '1', provider: '' });
   };
 
-  const deleteWarranty = (id) => save(warranties.filter(w => w.id !== id));
+  const handleDeleteWarranty = async (id) => {
+    setWarranties(warranties.filter(w => w.id !== id));
+    await dbDeleteWarranty(userId, id);
+  };
 
   const now = new Date();
   const active = warranties.filter(w => new Date(w.expiryDate) > now);
@@ -59,6 +67,8 @@ export default function Warranties() {
     a.href = url; a.download = 'warranties.csv'; a.click();
   };
 
+  if (authLoading || !user) return null;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -68,12 +78,11 @@ export default function Warranties() {
           <p className="text-gray-500">Track all your home warranties in one place</p>
         </div>
         <div className="flex gap-2">
-          {warranties.length > 0 && <button onClick={exportList} className="btn-secondary text-sm !py-2">📤 Export CSV</button>}
+          {warranties.length > 0 && <button onClick={exportList} className="btn-secondary text-sm !py-2">📄 Export CSV</button>}
           <button onClick={() => setShowModal(true)} className="btn-cta">+ Add Warranty</button>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total', value: warranties.length, color: 'blue' },
@@ -97,7 +106,6 @@ export default function Warranties() {
         </div>
       )}
 
-      {/* Filter */}
       <div className="flex gap-2">
         {['all', 'active', 'expiring', 'expired'].map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{f}</button>
@@ -107,11 +115,11 @@ export default function Warranties() {
       <div className="space-y-4">
         {filtered.length === 0 ? (
           <div className="card text-center py-12">
-            <p className="text-4xl mb-3">📋</p>
+            <p className="text-4xl mb-3">🛡</p>
             <p className="text-gray-500 mb-4">No warranties tracked yet. Add your first warranty to get started!</p>
             <button onClick={() => setShowModal(true)} className="btn-primary">Add Your First Warranty</button>
           </div>
-        ) : filtered.map(w => <WarrantyCard key={w.id} warranty={w} onDelete={deleteWarranty} />)}
+        ) : filtered.map(w => <WarrantyCard key={w.id} warranty={w} onDelete={handleDeleteWarranty} />)}
       </div>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Warranty">

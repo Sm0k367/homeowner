@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import CostEstimate from '../components/CostEstimate';
 import SEO from '../components/SEO';
+import { useAuth } from '../lib/AuthContext';
+import { getExpenses, saveExpenses as dbSaveExpenses } from '../lib/database';
 
 const commonTasks = ['HVAC Repair', 'HVAC Replacement', 'Roof Repair', 'Plumbing Repair', 'Electrical Work', 'Painting', 'Water Heater'];
 const categories = ['Maintenance', 'Repair', 'Improvement', 'Emergency', 'Other'];
 
 const seasonalTips = [
-  { season: '🌸 Spring', tips: ['Schedule HVAC tune-up before summer rush', 'Clean gutters after winter', 'Inspect roof for winter damage', 'Best time to negotiate contractor rates'] },
+  { season: '🌱 Spring', tips: ['Schedule HVAC tune-up before summer rush', 'Clean gutters after winter', 'Inspect roof for winter damage', 'Best time to negotiate contractor rates'] },
   { season: '☀️ Summer', tips: ['AC repairs are most expensive now — prevent with spring maintenance', 'Great time for exterior painting', 'Check attic ventilation', 'Water your foundation in drought areas'] },
   { season: '🍂 Fall', tips: ['HVAC tune-up before winter', 'Seal windows and doors for energy savings', 'Clean chimney/fireplace', 'Winterize outdoor plumbing'] },
   { season: '❄️ Winter', tips: ['Monitor pipe insulation', 'Contractors offer discounts in slow season', 'Plan spring projects now for better rates', 'Check smoke/CO detectors'] },
 ];
 
 export default function Costs() {
+  const { user, loading: authLoading } = useAuth();
   const [task, setTask] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [estimate, setEstimate] = useState(null);
@@ -21,17 +24,19 @@ export default function Costs() {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expForm, setExpForm] = useState({ description: '', amount: '', category: 'Maintenance', date: new Date().toISOString().split('T')[0] });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('hg_expenses');
-    if (saved) setExpenses(JSON.parse(saved));
-  }, []);
+  const userId = user?.id || user?.email;
 
-  const saveExpenses = (updated) => {
+  useEffect(() => {
+    if (!user) return;
+    getExpenses(userId).then(setExpenses);
+  }, [user]);
+
+  const saveExpenses = async (updated) => {
     setExpenses(updated);
-    localStorage.setItem('hg_expenses', JSON.stringify(updated));
+    await dbSaveExpenses(userId, updated);
   };
 
-  const getEstimate = async () => {
+  const getEstimateHandler = async () => {
     if (!task) return;
     setLoading(true);
     try {
@@ -45,14 +50,14 @@ export default function Costs() {
     setLoading(false);
   };
 
-  const addExpense = () => {
+  const addExpense = async () => {
     if (!expForm.description || !expForm.amount) return;
-    saveExpenses([...expenses, { ...expForm, id: Date.now().toString() }]);
+    await saveExpenses([...expenses, { ...expForm, id: Date.now().toString() }]);
     setExpForm({ description: '', amount: '', category: 'Maintenance', date: new Date().toISOString().split('T')[0] });
     setShowExpenseForm(false);
   };
 
-  const deleteExpense = (id) => saveExpenses(expenses.filter(e => e.id !== id));
+  const deleteExpense = async (id) => await saveExpenses(expenses.filter(e => e.id !== id));
 
   const totalSpent = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const byCategory = {};
@@ -60,6 +65,8 @@ export default function Costs() {
 
   const currentMonth = new Date().getMonth();
   const seasonIndex = currentMonth < 3 ? 3 : currentMonth < 6 ? 0 : currentMonth < 9 ? 1 : 2;
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="space-y-6">
@@ -69,9 +76,8 @@ export default function Costs() {
         <p className="text-gray-500">Compare costs, get savings tips, and track your home maintenance budget</p>
       </div>
 
-      {/* Cost Estimator */}
       <div className="card">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">💰 Get Cost Estimate</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">💡 Get Cost Estimate</h2>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <select value={task} onChange={e => setTask(e.target.value)} className="input-field">
@@ -80,7 +86,7 @@ export default function Costs() {
             </select>
           </div>
           <input value={zipCode} onChange={e => setZipCode(e.target.value)} className="input-field w-full sm:w-32" placeholder="Zip code" />
-          <button onClick={getEstimate} disabled={loading || !task} className="btn-primary whitespace-nowrap">
+          <button onClick={getEstimateHandler} disabled={loading || !task} className="btn-primary whitespace-nowrap">
             {loading ? 'Getting...' : 'Get Estimate'}
           </button>
         </div>
@@ -88,9 +94,8 @@ export default function Costs() {
 
       {estimate && <CostEstimate estimate={estimate} />}
 
-      {/* Seasonal Tips */}
       <div className="card">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">🗓️ Seasonal Money-Saving Tips</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">💲 Seasonal Money-Saving Tips</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {seasonalTips.map((s, i) => (
             <div key={i} className={`rounded-lg p-4 ${i === seasonIndex ? 'bg-blue-50 border-2 border-blue-300' : 'bg-gray-50'}`}>
@@ -103,7 +108,6 @@ export default function Costs() {
         </div>
       </div>
 
-      {/* Budget Tracker */}
       <div className="card">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-900">📊 Budget Tracker</h2>
@@ -126,7 +130,6 @@ export default function Costs() {
           </div>
         )}
 
-        {/* Summary */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4">
             <p className="text-sm text-blue-600 font-medium">Total Spent</p>
@@ -140,7 +143,6 @@ export default function Costs() {
           ))}
         </div>
 
-        {/* Expense List */}
         {expenses.length === 0 ? (
           <p className="text-center text-gray-400 py-6">No expenses logged yet. Start tracking to see your spending patterns.</p>
         ) : (
@@ -149,7 +151,7 @@ export default function Costs() {
               <div key={e.id} className="flex items-center justify-between py-3 border-b border-gray-100">
                 <div>
                   <p className="font-medium text-gray-900">{e.description}</p>
-                  <p className="text-xs text-gray-500">{e.category} • {e.date}</p>
+                  <p className="text-xs text-gray-500">{e.category} · {e.date}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-gray-900">${parseFloat(e.amount).toFixed(2)}</span>
